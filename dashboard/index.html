@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#080d18"><title>SolQuant Pulse · Live</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <style>
+    :root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#080d18;color:#e5edf8;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;background-image:radial-gradient(ellipse at 12% 0%,rgba(14,165,233,.10),transparent 34%),radial-gradient(ellipse at 95% 15%,rgba(16,185,129,.07),transparent 28%)}
+    .panel{background:linear-gradient(145deg,rgba(17,27,45,.96),rgba(10,17,30,.96));border:1px solid rgba(148,163,184,.13);box-shadow:0 18px 55px rgba(0,0,0,.22);border-radius:18px}
+    .muted{color:#8fa2bb}.field{width:100%;background:#0a1220;border:1px solid #26364d;border-radius:9px;padding:9px 10px;color:#e5edf8;outline:none}.field:focus{border-color:#22d3ee;box-shadow:0 0 0 3px rgba(34,211,238,.1)}
+    .btn{border:1px solid #2b3c53;border-radius:10px;padding:9px 13px;font-size:12px;font-weight:700;transition:.18s}.btn:hover{filter:brightness(1.15);transform:translateY(-1px)}.btn-primary{background:#0e7490;border-color:#0891b2;color:#ecfeff}.btn-danger{background:rgba(190,24,93,.14);border-color:rgba(244,63,94,.35);color:#fda4af}.btn-soft{background:#111d30;color:#cbd5e1}
+    .metric{background:rgba(4,10,20,.55);border:1px solid rgba(148,163,184,.10);border-radius:13px;padding:14px}.metric-label{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:#8fa2bb}.metric-value{font:700 23px ui-monospace,SFMono-Regular,monospace;margin-top:6px}.dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:#64748b}.dot.on{background:#34d399;box-shadow:0 0 12px #34d399}.dot.off{background:#f59e0b}.terminal-row{display:grid;grid-template-columns:130px 100px minmax(90px,1fr) minmax(100px,1.1fr) 100px 100px;gap:12px;align-items:center;padding:12px 14px;border-bottom:1px solid rgba(148,163,184,.09);font-size:12px}.terminal-row:last-child{border-bottom:0}.tag{display:inline-flex;border-radius:6px;padding:4px 7px;font-size:10px;font-weight:800;letter-spacing:.04em}.tag-buy{background:rgba(16,185,129,.12);color:#6ee7b7}.tag-sell{background:rgba(34,211,238,.12);color:#67e8f9}.tag-fail{background:rgba(244,63,94,.12);color:#fda4af}.tag-neutral{background:rgba(148,163,184,.12);color:#cbd5e1}.scroll::-webkit-scrollbar{width:6px;height:6px}.scroll::-webkit-scrollbar-thumb{background:#26364d;border-radius:8px}
+    @media(max-width:760px){.terminal-row{grid-template-columns:90px 76px minmax(80px,1fr) 90px;gap:8px}.hide-mobile{display:none}.metric-value{font-size:19px}}
+  </style>
+</head>
+<body>
+  <header class="sticky top-0 z-20 border-b border-slate-800/80 bg-[#080d18]/90 backdrop-blur-xl">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl bg-cyan-400/10 border border-cyan-300/25 flex items-center justify-center text-cyan-300 font-black">SQ</div><div><div class="font-bold tracking-wide">SOLQUANT <span class="text-cyan-300">PULSE</span></div><div class="text-[10px] muted tracking-[.18em]">SOLANA MEMECOIN · LIVE TRADING</div></div></div>
+      <div class="flex items-center flex-wrap gap-2 text-xs"><span class="flex items-center gap-2 rounded-lg bg-slate-900/80 border border-slate-700/70 px-3 py-2"><i id="statusDot" class="dot"></i><span id="statusText" class="text-slate-300">Đang kết nối...</span></span><select id="modeSelect" class="field !w-auto !py-2 text-xs"><option value="PAPER">PAPER</option><option value="LIVE">LIVE</option></select><button id="toggleBot" class="btn btn-primary">BẮT ĐẦU BOT</button></div>
+    </div>
+  </header>
+  <main class="max-w-7xl mx-auto px-4 py-6 space-y-5">
+    <section class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div class="metric"><div class="metric-label">Realized net PnL</div><div id="metricPnl" class="metric-value text-emerald-300">0.000 SOL</div><div id="metricPnlUsd" class="text-[11px] muted mt-1">Theo dữ liệu lệnh đã đóng</div></div>
+      <div class="metric"><div class="metric-label">Win rate</div><div id="metricWinRate" class="metric-value text-cyan-300">0.0%</div><div id="metricWinsLosses" class="text-[11px] muted mt-1">0 thắng · 0 thua</div></div>
+      <div class="metric"><div class="metric-label">Số lệnh</div><div id="metricTrades" class="metric-value text-white">0</div><div class="text-[11px] muted mt-1">Tổng bản ghi giao dịch</div></div>
+      <div class="metric"><div class="metric-label">Vị thế đang mở</div><div id="metricPositions" class="metric-value text-amber-300">0</div><div id="walletLabel" class="text-[11px] muted mt-1 truncate">Wallet chưa cấu hình</div></div>
+    </section>
+
+    <section class="panel p-4 sm:p-5">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-4"><div><div class="text-sm font-bold">Profit performance</div><div class="text-xs muted mt-1">Đường cong PnL thực hiện, lấy từ lịch sử SQLite</div></div><span id="chartRangeLabel" class="text-[10px] uppercase tracking-widest text-cyan-300">REALIZED EQUITY</span></div>
+      <div class="h-[260px] sm:h-[320px]"><canvas id="profitChart"></canvas></div>
+      <div id="chartEmpty" class="hidden text-center text-xs muted py-3">Chưa có lệnh đóng để tạo đường cong lợi nhuận.</div>
+    </section>
+
+    <section class="panel overflow-hidden">
+      <div class="p-4 sm:p-5 flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80"><div><div class="text-sm font-bold">Lệnh đã thực hiện <span class="text-cyan-300">/ Execution terminal</span></div><div class="text-xs muted mt-1">BUY, SELL, trạng thái khớp lệnh và transaction signature</div></div><button id="refreshBtn" class="btn btn-soft">↻ Làm mới</button></div>
+      <div class="grid grid-cols-[130px_100px_minmax(90px,1fr)_minmax(100px,1.1fr)_100px_100px] gap-3 px-4 py-2.5 text-[9px] uppercase tracking-widest text-slate-500 border-b border-slate-800/70 max-[760px]:grid-cols-[90px_76px_minmax(80px,1fr)_90px]"><span>Thời gian</span><span>Action</span><span>Token</span><span>Giá vào / ra</span><span class="hide-mobile">PnL</span><span class="hide-mobile">Tx</span></div>
+      <div id="terminalRows" class="max-h-[470px] overflow-auto scroll"><div class="p-10 text-center text-xs muted">Đang tải lịch sử giao dịch...</div></div>
+      <div class="px-4 py-3 border-t border-slate-800/70 flex items-center justify-between text-[10px] muted"><span id="terminalCount">0 records</span><span>Persistent storage · SQLite</span></div>
+    </section>
+
+    <section class="panel p-4 sm:p-5">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-4"><div><div class="text-sm font-bold">Cấu hình Bot</div><div class="text-xs muted mt-1">Các thay đổi được lưu vào config.json và áp dụng cho scanner/strategy</div></div><span class="text-[10px] text-amber-300 bg-amber-400/10 border border-amber-300/20 px-2 py-1 rounded-md">Kiểm tra kỹ trước khi chạy LIVE</span></div>
+      <form id="configForm" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <label class="text-xs muted">Market cap tối thiểu (USD)<input id="minMcap" class="field mt-1" type="number" min="1000" step="1000" required></label>
+        <label class="text-xs muted">Market cap tối đa (USD)<input id="maxMcap" class="field mt-1" type="number" min="1000" step="1000" required></label>
+        <label class="text-xs muted">Rugcheck score tối đa<input id="maxRug" class="field mt-1" type="number" min="0" max="10000" required></label>
+        <label class="text-xs muted">Holder lớn nhất ngoài LP (%)<input id="maxHolder" class="field mt-1" type="number" min="0.1" max="100" step="0.1" required></label>
+        <label class="text-xs muted">Buy/Sell volume ratio tối thiểu<input id="minVolRatio" class="field mt-1" type="number" min="0.1" step="0.1" required></label>
+        <label class="text-xs muted">Kích thước lệnh (SOL)<input id="orderSize" class="field mt-1" type="number" min="0.000001" step="0.001" required></label>
+        <label class="text-xs muted">Take Profit 1 (%)<input id="tp1" class="field mt-1" type="number" min="0.1" step="1" required></label>
+        <label class="text-xs muted">Take Profit 2 (%)<input id="tp2" class="field mt-1" type="number" min="0.2" step="1" required></label>
+        <label class="text-xs muted">Hard stop loss (%) · số âm<input id="stopLoss" class="field mt-1" type="number" min="-99" max="-0.1" step="1" required></label>
+        <label class="text-xs muted">Trailing kích hoạt (%)<input id="trailActivation" class="field mt-1" type="number" min="0.1" step="1" required></label>
+        <label class="text-xs muted">Trailing distance (%)<input id="trailDistance" class="field mt-1" type="number" min="0.1" max="99" step="1" required></label>
+        <div class="flex items-end"><button class="btn btn-primary w-full" type="submit">LƯU CẤU HÌNH</button></div>
+      </form>
+      <p class="text-[10px] muted mt-4 leading-relaxed">LIVE hiện yêu cầu khóa ký <code class="text-cyan-200">SOLANA_PRIVATE_KEY_BASE58</code> trong backend .env. Kết nối Bitget Wallet Extension chưa được tích hợp vào luồng auto-execution của backend hiện tại; không nhập private key/seed phrase vào dashboard.</p>
+    </section>
+    <footer class="text-center text-[10px] muted pb-3">SolQuant Pulse · Dashboard hiển thị dữ liệu backend, không tạo lệnh hoặc PnL giả lập.</footer>
+  </main>
+  <div id="toast" class="fixed bottom-4 right-4 hidden max-w-sm rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-xs shadow-2xl"></div>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  let chart = null, latestState = null, socket = null, reconnectTimer = null;
+  const fmt = (v,d=4) => Number(v||0).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+  const short = s => s ? `${s.slice(0,6)}…${s.slice(-5)}` : '—';
+  const esc = s => String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  function toast(msg, bad=false){const el=$('toast');el.textContent=msg;el.className=`fixed bottom-4 right-4 max-w-sm rounded-xl border px-4 py-3 text-xs shadow-2xl ${bad?'border-rose-500/40 bg-rose-950 text-rose-100':'border-emerald-500/40 bg-slate-900 text-emerald-100'}`;setTimeout(()=>el.classList.add('hidden'),3500)}
+  async function api(path,opts={}){const r=await fetch(path,{...opts,headers:{'Content-Type':'application/json',...(opts.headers||{})}});const data=await r.json().catch(()=>({detail:r.statusText}));if(!r.ok)throw new Error(data.detail||`HTTP ${r.status}`);return data}
+  function configToForm(c){const sc=c.scanner_filters||{},sec=c.security_rugcheck||{},risk=c.strategy_risk||{},tiers=risk.take_profit_tiers||[],trail=risk.trailing_stop||{};
+    $('minMcap').value=sc.min_market_cap_usd??150000;$('maxMcap').value=sc.max_market_cap_usd??500000;$('maxRug').value=sec.max_rugcheck_score??400;$('maxHolder').value=sec.max_single_non_lp_holder_pct??12;$('minVolRatio').value=risk.min_buy_sell_vol_ratio_5m??1.6;$('orderSize').value=risk.order_size_sol??0.01;$('tp1').value=tiers[0]?.target_pnl_pct??50;$('tp2').value=tiers[1]?.target_pnl_pct??100;$('stopLoss').value=risk.hard_stop_loss_pct??-20;$('trailActivation').value=trail.activation_pnl_pct??25;$('trailDistance').value=trail.trail_distance_pct??12;
+  }
+  function updateChart(metrics){const rows=metrics.equity_history||[];const labels=rows.map(x=>{const d=new Date(x.time);return isNaN(d)?String(x.time):d.toLocaleString('vi-VN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})});const values=rows.map(x=>Number(x.pnlSol||0));$('chartEmpty').classList.toggle('hidden',rows.length>0);
+    if(!chart){chart=new Chart($('profitChart'),{type:'line',data:{labels,datasets:[{label:'Realized PnL (SOL)',data:values,borderColor:'#22d3ee',backgroundColor:'rgba(34,211,238,.10)',fill:true,tension:.28,pointRadius:2,pointHoverRadius:5,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,interaction:{intersect:false,mode:'index'},plugins:{legend:{display:false},tooltip:{backgroundColor:'#0b1423',borderColor:'#26364d',borderWidth:1,callbacks:{label:c=>`${fmt(c.parsed.y,5)} SOL`}}},scales:{x:{grid:{display:false},ticks:{color:'#71839b',maxTicksLimit:8}},y:{grid:{color:'rgba(148,163,184,.10)'},ticks:{color:'#71839b',callback:v=>`${v} SOL`}}}}});}
+    else {chart.data.labels=labels;chart.data.datasets[0].data=values;chart.update('none')}
+  }
+  function renderTerminal(trades){const rows=$('terminalRows');if(!trades?.length){rows.innerHTML='<div class="p-10 text-center text-xs muted">Chưa có lệnh nào được ghi nhận trong SQLite.</div>';$('terminalCount').textContent='0 records';return}
+    rows.innerHTML=trades.map(t=>{const action=t.action||'—',buy=action==='BUY_ENTRY',failed=action.includes('FAILED')||t.status==='FAILED',pnl=Number(t.pnl_sol||0),priceIn=Number(t.entry_price||0),priceOut=Number(t.exit_price||0),time=t.timestamp?new Date(t.timestamp).toLocaleString('vi-VN'):'—';const tag=failed?'tag-fail':buy?'tag-buy':'tag-sell';return `<div class="terminal-row"><span class="text-slate-400 text-[10px]">${esc(time)}</span><span><b class="tag ${tag}">${esc(action)}</b></span><span class="min-w-0"><b class="text-slate-100">${esc(t.symbol||'UNKNOWN')}</b><small class="block muted font-mono mt-1">${esc(short(t.mint))}</small></span><span class="font-mono text-[10px]">${fmt(priceIn,8)}<small class="block muted mt-1">${fmt(priceOut,8)}</small></span><span class="hide-mobile font-mono ${pnl>=0?'text-emerald-300':'text-rose-300'}">${buy||failed?'—':`${pnl>=0?'+':''}${fmt(pnl,5)} SOL`}</span><span class="hide-mobile text-cyan-300 font-mono">${t.tx_signature&&t.tx_signature!=='FAILED'&&!String(t.tx_signature).startsWith('PAPER_SIM')?`<a target="_blank" rel="noopener" href="https://solscan.io/tx/${encodeURIComponent(t.tx_signature)}">${esc(short(t.tx_signature))}</a>`:esc(t.tx_signature||'—')}</span></div>`}).join('');$('terminalCount').textContent=`${trades.length} records`;
+  }
+  function render(data){latestState=data;const m=data.metrics||{},a=data.account||{},profile=a.profile||{};const pnl=Number(m.net_pnl_sol||0),wins=Number(m.wins||0),losses=Number(m.losses||0),n=wins+losses;
+    $('metricPnl').textContent=`${pnl>=0?'+':''}${fmt(pnl,5)} SOL`;$('metricPnl').className=`metric-value ${pnl>=0?'text-emerald-300':'text-rose-300'}`;$('metricPnlUsd').textContent='PnL đã thực hiện · USD quy đổi chưa bật';$('metricWinRate').textContent=`${n?(wins/n*100).toFixed(1):'0.0'}%`;$('metricWinsLosses').textContent=`${wins} thắng · ${losses} thua`;$('metricTrades').textContent=String(m.trade_count||0);$('metricPositions').textContent=String((data.open_positions||[]).length);$('walletLabel').textContent=`Wallet: ${short(data.bot_pubkey)}`;
+    $('statusDot').className=`dot ${data.running?'on':'off'}`;$('statusText').textContent=data.running?`BOT RUNNING · ${data.mode}`:`BOT STOPPED · ${data.mode}`;$('toggleBot').textContent=data.running?'DỪNG BOT':'BẮT ĐẦU BOT';$('toggleBot').className=`btn ${data.running?'btn-danger':'btn-primary'}`;$('modeSelect').value=data.mode||'PAPER';$('modeSelect').disabled=!!data.running;
+    configToForm(data.config||{});updateChart(m);renderTerminal(a.trades||[]);
+  }
+  async function refresh(){try{render(await api('/api/state'))}catch(e){$('statusText').textContent='Backend chưa kết nối';$('statusDot').className='dot off';toast(`Không tải được dữ liệu: ${e.message}`,true)}}
+  async function toggleBot(){const btn=$('toggleBot');btn.disabled=true;try{if(latestState?.running){await api('/api/bot/stop',{method:'POST'});toast('Đã gửi yêu cầu dừng bot.')}else{const mode=$('modeSelect').value;if(mode==='LIVE'&&!confirm('LIVE sẽ gửi giao dịch thật và sử dụng khóa ký trên backend. Bạn đã kiểm tra .env, ví và giới hạn rủi ro chưa?'))return;await api(`/api/bot/start?mode=${encodeURIComponent(mode)}`,{method:'POST'});toast(`Đã khởi chạy bot ở chế độ ${mode}.`)}await refresh()}catch(e){toast(e.message,true)}finally{btn.disabled=false}}
+  async function saveConfig(ev){ev.preventDefault();const body={min_market_cap_usd:+$('minMcap').value,max_market_cap_usd:+$('maxMcap').value,max_rugcheck_score:+$('maxRug').value,max_single_non_lp_holder_pct:+$('maxHolder').value,min_buy_sell_vol_ratio_5m:+$('minVolRatio').value,order_size_sol:+$('orderSize').value,tp1_pct:+$('tp1').value,tp2_pct:+$('tp2').value,hard_stop_loss_pct:+$('stopLoss').value,trail_activation_pct:+$('trailActivation').value,trail_distance_pct:+$('trailDistance').value};const b=ev.submitter;b.disabled=true;try{await api('/api/config',{method:'POST',body:JSON.stringify(body)});toast('Đã lưu cấu hình vào config.json.');await refresh()}catch(e){toast(e.message,true)}finally{b.disabled=false}}
+  function connectSocket(){if(socket&&socket.readyState<=1)return;const proto=location.protocol==='https:'?'wss':'ws';socket=new WebSocket(`${proto}://${location.host}/ws`);socket.onopen=()=>{clearTimeout(reconnectTimer);refresh()};socket.onmessage=()=>refresh();socket.onclose=()=>{reconnectTimer=setTimeout(connectSocket,2500)};socket.onerror=()=>socket.close()}
+  $('toggleBot').addEventListener('click',toggleBot);$('configForm').addEventListener('submit',saveConfig);$('refreshBtn').addEventListener('click',refresh);$('modeSelect').addEventListener('change',()=>{if(latestState?.running)$('modeSelect').value=latestState.mode});
+  refresh();connectSocket();setInterval(refresh,12000);
+})();
+</script>
+</body></html>

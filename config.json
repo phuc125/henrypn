@@ -1,0 +1,56 @@
+{
+  "network": {
+    "solana_rpc_url": "https://api.mainnet-beta.solana.com",
+    "helius_free_sender_url": "https://sender.helius-rpc.com/fast",
+    "pumpportal_ws_url": "wss://pumpportal.fun/api/data",
+    "dexscreener_api_base": "https://api.dexscreener.com/latest/dex/tokens",
+    "rugcheck_api_base": "https://api.rugcheck.xyz/v1/tokens",
+    "jupiter_quote_url": "https://lite-api.jup.ag/swap/v1/quote",
+    "jupiter_swap_url": "https://lite-api.jup.ag/swap/v1/swap",
+    "geckoterminal_ohlcv_base": "https://api.geckoterminal.com/api/v2/networks/solana/pools"
+  },
+  "wallet": {
+    "execution_signing_mode": "LOCAL_KEYPAIR",
+    "bitget_provider_path": "window.bitkeep.solana",
+    "slippage_bps": 100,
+    "priority_fee_lamports": 500000
+  },
+  "scanner_filters": {
+    "min_market_cap_usd": 150000.0,
+    "max_market_cap_usd": 500000.0,
+    "min_liquidity_usd": 18000,
+    "min_liq_to_mcap_ratio": 0.08
+  },
+  "security_rugcheck": {
+    "max_rugcheck_score": 400,
+    "reject_danger_status": true,
+    "require_mint_revoked": true,
+    "require_freeze_revoked": true,
+    "min_lp_burned_pct": 95.0,
+    "max_single_non_lp_holder_pct": 12.0,
+    "max_top10_holders_pct": 30.0
+  },
+  "strategy_risk": {
+    "order_size_sol": 0.5,
+    "min_buy_sell_vol_ratio_5m": 1.6,
+    "min_unique_buyers_5m": 15,
+    "rsi_14_min": 45.0,
+    "rsi_14_max": 72.0,
+    "take_profit_tiers": [
+      {
+        "target_pnl_pct": 50.0,
+        "sell_portion_pct": 50.0
+      },
+      {
+        "target_pnl_pct": 100.0,
+        "sell_portion_pct": 25.0
+      }
+    ],
+    "hard_stop_loss_pct": -20.0,
+    "trailing_stop": {
+      "enabled": true,
+      "activation_pnl_pct": 25.0,
+      "trail_distance_pct": 12.0
+    }
+  }
+}

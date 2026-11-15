@@ -1,0 +1,13 @@
+services:
+  solquant-bot:
+    build: .
+    container_name: solquant-pulse-bitget
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      HOST: 0.0.0.0
+    env_file:
+      - .env
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
